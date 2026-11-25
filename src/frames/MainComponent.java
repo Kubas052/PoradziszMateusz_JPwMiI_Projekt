@@ -21,7 +21,7 @@ public class MainComponent extends JComponent {
     private int llamaDy = 0;
     private boolean onGround = true;
     private static final int GRAVITY = 1;
-    private static final int JUMP_STRENGTH = -15;
+    private static final int JUMP_STRENGTH = -20;
     private static final int LLAMA_SPEED = 6;
     private static final int LLAMA_W = 48;
     private static final int LLAMA_H = 48;
@@ -36,6 +36,20 @@ public class MainComponent extends JComponent {
     
     private int scrollOffset = 0;
 
+    private final java.util.List<Platform> platforms = new java.util.ArrayList<>();
+    private int platformSpawnCounter = 0;
+
+    private class Platform {
+        int x, y, width, height;
+        Platform(int x, int y, int width, int height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+    }
+    
+    
     public MainComponent() {
         setOpaque(true);
         setFocusable(true);
@@ -74,7 +88,7 @@ public class MainComponent extends JComponent {
                 }
             }
         });
-
+        
         // timer od grawitacji
             javax.swing.Timer timer = new javax.swing.Timer(16, e -> {
             if (leftPressed) {
@@ -99,6 +113,21 @@ public class MainComponent extends JComponent {
             llamaDy += GRAVITY;
             llamaY += llamaDy;
 
+            onGround = false;
+            for (Platform p : platforms) {
+                int llamaBottom = llamaY + LLAMA_H;
+                if (llamaBottom >= p.y
+                        && llamaBottom <= p.y + p.height
+                        && llamaX + LLAMA_W > p.x
+                        && llamaX < p.x + p.width
+                        && llamaDy >= 0) {
+                    llamaY = p.y - LLAMA_H;
+                    llamaDy = 0;
+                    onGround = true;
+                    break;
+                }
+            }
+
             int groundY = getHeight() - 80 - LLAMA_H;
             if (llamaY >= groundY) {
                 llamaY = groundY;
@@ -109,6 +138,24 @@ public class MainComponent extends JComponent {
             scrollOffset += 2;
             if (scrollOffset >= backgroundImage.getWidth()) {
                 scrollOffset = 0;
+            }
+            
+            java.util.Iterator<Platform> pit = platforms.iterator();
+            while (pit.hasNext()) {
+                Platform p = pit.next();
+                p.x -= 2;
+                if (p.x + p.width < 0) {
+                    pit.remove();
+                }
+            }
+
+            platformSpawnCounter++;
+            if (platformSpawnCounter > 120) {
+                platformSpawnCounter = 0;
+                int spawnX = getWidth();
+                int spawnY = 200 + (int) (Math.random() * 200);
+                int spawnW = 100 + (int) (Math.random() * 100);
+                platforms.add(new Platform(spawnX, spawnY, spawnW, 20));
             }
 
             repaint();
@@ -139,6 +186,12 @@ public class MainComponent extends JComponent {
             for (int x = -offset; x < getWidth(); x += bgW) {
                 g2.drawImage(backgroundImage, x, 0, bgW, getHeight(), null);
             }
+        }
+        for (Platform p : platforms) {
+            g2.setColor(new java.awt.Color(34, 139, 34)); // zielony
+            g2.fillRect(p.x, p.y, p.width, p.height);
+            g2.setColor(java.awt.Color.BLACK);
+            g2.drawRect(p.x, p.y, p.width, p.height);
         }
 
         int groundY = getHeight() - 80;
