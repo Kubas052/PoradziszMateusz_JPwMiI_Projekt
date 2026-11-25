@@ -29,6 +29,12 @@ public class MainComponent extends JComponent {
     private boolean leftPressed = false;
     private boolean rightPressed = false;
     private boolean facingLeft = false;
+    private int frameIndex = 0;
+    private int frameCounter = 0;
+    private static final int FRAME_COUNT = 6;
+    private static final int FRAME_DELAY = 4;
+    
+    private int scrollOffset = 0;
 
     public MainComponent() {
         setOpaque(true);
@@ -70,13 +76,24 @@ public class MainComponent extends JComponent {
         });
 
         // timer od grawitacji
-        javax.swing.Timer timer = new javax.swing.Timer(16, e -> {
+            javax.swing.Timer timer = new javax.swing.Timer(16, e -> {
             if (leftPressed) {
                 llamaX -= LLAMA_SPEED;
                 if (llamaX < 0) llamaX = 0;
             }
             if (rightPressed) {
                 llamaX += LLAMA_SPEED;
+            }
+
+            if (leftPressed || rightPressed) {
+                frameCounter++;
+                if (frameCounter >= FRAME_DELAY) {
+                    frameCounter = 0;
+                    frameIndex = (frameIndex + 1) % FRAME_COUNT;
+                }
+            } else {
+                frameIndex = 0;
+                frameCounter = 0;
             }
 
             llamaDy += GRAVITY;
@@ -87,6 +104,11 @@ public class MainComponent extends JComponent {
                 llamaY = groundY;
                 llamaDy = 0;
                 onGround = true;
+            }
+            
+            scrollOffset += 2;
+            if (scrollOffset >= backgroundImage.getWidth()) {
+                scrollOffset = 0;
             }
 
             repaint();
@@ -112,7 +134,11 @@ public class MainComponent extends JComponent {
         Graphics2D g2 = (Graphics2D) g;
 
         if (backgroundImage != null) {
-            g2.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
+            int bgW = backgroundImage.getWidth();
+            int offset = scrollOffset % bgW;
+            for (int x = -offset; x < getWidth(); x += bgW) {
+                g2.drawImage(backgroundImage, x, 0, bgW, getHeight(), null);
+            }
         }
 
         int groundY = getHeight() - 80;
@@ -121,14 +147,17 @@ public class MainComponent extends JComponent {
 
         // lama
         if (llamaImage != null) {
-            BufferedImage frame = llamaImage.getSubimage(0, 0, LLAMA_W, LLAMA_H);
-            if (facingLeft) {
-                g2.drawImage(frame,
-                        llamaX + LLAMA_W, llamaY,
-                        llamaX, llamaY + LLAMA_H,
-                        0, 0, LLAMA_W, LLAMA_H, null);
-            } else {
-                g2.drawImage(frame, llamaX, llamaY, LLAMA_W, LLAMA_H, null);
+            int fy = frameIndex * LLAMA_H;
+            if (fy + LLAMA_H <= llamaImage.getHeight()) {
+                BufferedImage frame = llamaImage.getSubimage(0, fy, LLAMA_W, LLAMA_H);
+                if (facingLeft) {
+                    g2.drawImage(frame,
+                            llamaX + LLAMA_W, llamaY,
+                            llamaX, llamaY + LLAMA_H,
+                            0, 0, LLAMA_W, LLAMA_H, null);
+                } else {
+                    g2.drawImage(frame, llamaX, llamaY, LLAMA_W, LLAMA_H, null);
+                }
             }
         }
 
