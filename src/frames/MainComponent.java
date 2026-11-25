@@ -45,7 +45,8 @@ public class MainComponent extends JComponent {
     private final java.util.List<Projectile> projectiles = new java.util.ArrayList<>();
     private boolean shootPressed = false;
     private int shootCooldown = 0;
-    private static final int SHOOT_DELAY = 1;
+    private static final int SHOOT_DELAY = 0;
+    private int score = 0;
 
     private class Platform {
         int x, y, width, height;
@@ -267,8 +268,10 @@ public class MainComponent extends JComponent {
                         break;
                     }
                 }
-                if (hit) projIt.remove();
-            }
+                if (hit) {
+                    projIt.remove();
+                    score += 1;
+                }            }
 
             repaint();
         });
@@ -375,6 +378,27 @@ public class MainComponent extends JComponent {
                 g2.drawImage(backgroundImage, x, 0, bgW, getHeight(), null);
             }
         }
+        String scoreText = "SCORE: " + score;
+
+        java.awt.image.BufferedImage small = new java.awt.image.BufferedImage(
+                200, 10, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D sg = small.createGraphics();
+        sg.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+                java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+        sg.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 10));
+        sg.setColor(java.awt.Color.WHITE);
+        sg.drawString(scoreText, 0, 9);
+        sg.dispose();
+
+        // skalowanie
+        int scaledW = small.getWidth() * 4;
+        int scaledH = small.getHeight() * 4;
+        java.awt.Image scaled = small.getScaledInstance(scaledW, scaledH,
+                java.awt.Image.SCALE_REPLICATE);
+
+        int textWidth = scaledW;
+        g2.drawImage(scaled, getWidth() - textWidth - 20, 10, null);
+        
         for (Platform p : platforms) {
             g2.setColor(new java.awt.Color(34, 139, 34));
             g2.fillRect(p.x, p.y, p.width, p.height);
@@ -407,27 +431,6 @@ public class MainComponent extends JComponent {
         
         for (Projectile p : projectiles) {
             p.draw(g2);
-        }
-
-        if (rainbowImage != null) {
-            g2.drawImage(rainbowImage, 100, 20, 24, 6, null);
-        }
-
-        if (chickenSheet != null) {
-            BufferedImage frame = chickenSheet.getSubimage(0, 0, 32, 32);
-            g2.drawImage(frame, 20, 100, 32, 32, null);
-        }
-        if (chickenBlack != null) {
-            BufferedImage frame = chickenBlack.getSubimage(0, 0, 32, 32);
-            g2.drawImage(frame, 100, 100, 32, 32, null);
-        }
-        if (chickenDark != null) {
-            BufferedImage frame = chickenDark.getSubimage(0, 0, 32, 32);
-            g2.drawImage(frame, 180, 100, 32, 32, null);
-        }
-        if (chickenLight != null) {
-            BufferedImage frame = chickenLight.getSubimage(0, 0, 32, 32);
-            g2.drawImage(frame, 260, 100, 32, 32, null);
         }
     }
     
