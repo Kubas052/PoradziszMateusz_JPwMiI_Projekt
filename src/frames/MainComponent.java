@@ -41,6 +41,11 @@ public class MainComponent extends JComponent {
     
     private final java.util.List<Chicken> chickens = new java.util.ArrayList<>();
     private int chickenSpawnCounter = 0;
+    
+    private final java.util.List<Projectile> projectiles = new java.util.ArrayList<>();
+    private boolean shootPressed = false;
+    private int shootCooldown = 0;
+    private static final int SHOOT_DELAY = 1;
 
     private class Platform {
         int x, y, width, height;
@@ -49,6 +54,35 @@ public class MainComponent extends JComponent {
             this.y = y;
             this.width = width;
             this.height = height;
+        }
+    }
+    
+        private class Projectile {
+        float x, y;
+        static final int W = 24;
+        static final int H = 6;
+        static final float SPEED = 4f;
+
+        Projectile(float x, float y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        void update() {
+            x += SPEED;
+        }
+
+        java.awt.Rectangle getBounds() {
+            return new java.awt.Rectangle((int) x, (int) y, W, H);
+        }
+
+        void draw(Graphics2D g2) {
+            if (rainbowImage != null) {
+                g2.drawImage(rainbowImage, (int) x, (int) y, W, H, null);
+            } else {
+                g2.setColor(java.awt.Color.MAGENTA);
+                g2.fillRect((int) x, (int) y, W, H);
+            }
         }
     }
     
@@ -70,6 +104,8 @@ public class MainComponent extends JComponent {
                         facingLeft = false;
                         break;
                     case java.awt.event.KeyEvent.VK_SPACE:
+                        shootPressed = true;
+                        break;
                     case java.awt.event.KeyEvent.VK_UP:
                         if (onGround) {
                             llamaDy = JUMP_STRENGTH;
@@ -87,6 +123,9 @@ public class MainComponent extends JComponent {
                         break;
                     case java.awt.event.KeyEvent.VK_RIGHT:
                         rightPressed = false;
+                        break;
+                    case java.awt.event.KeyEvent.VK_SPACE:
+                        shootPressed = false;
                         break;
                 }
             }
@@ -196,6 +235,40 @@ public class MainComponent extends JComponent {
                     chickens.add(new Chicken(spawnX, spawnY, variant));
                 }
             }
+            
+            if (shootPressed) {
+                shootCooldown--;
+                if (shootCooldown <= 0) {
+                    shootCooldown = SHOOT_DELAY;
+                    projectiles.add(new Projectile(
+                            llamaX + LLAMA_W, llamaY + LLAMA_H / 2f));
+                }
+            }
+
+            java.util.Iterator<Projectile> projIt = projectiles.iterator();
+            while (projIt.hasNext()) {
+                Projectile p = projIt.next();
+                p.update();
+                if (p.x > getWidth()) {
+                    projIt.remove();
+                }
+            }
+
+            projIt = projectiles.iterator();
+            while (projIt.hasNext()) {
+                Projectile p = projIt.next();
+                java.util.Iterator<Chicken> chIt = chickens.iterator();
+                boolean hit = false;
+                while (chIt.hasNext()) {
+                    Chicken c = chIt.next();
+                    if (p.getBounds().intersects(c.getBounds())) {
+                        chIt.remove();
+                        hit = true;
+                        break;
+                    }
+                }
+                if (hit) projIt.remove();
+            }
 
             repaint();
         });
@@ -215,7 +288,10 @@ public class MainComponent extends JComponent {
     }
         private class Chicken {
         int x, y;
-        int dy = 0;
+        float dy = 0f;
+        int jumpCooldown = 0;
+        static final float CHICKEN_GRAVITY = 0.5f; //niestety float musi byc bo gupi jestem i moglem kurczaki najpierw robic
+        static final float CHICKEN_JUMP = -12f;
         boolean onGround = false;
         int frameIndex = 0;
         int frameCounter = 0;
@@ -230,11 +306,18 @@ public class MainComponent extends JComponent {
             this.sheet = sheet;
         }
 
-        void update() {
+                void update() {
             x -= 3;
 
+            jumpCooldown--;
+            if (jumpCooldown <= 0 && onGround && Math.random() < 0.02) {
+                dy = CHICKEN_JUMP;
+                onGround = false;
+                jumpCooldown = 60;
+            }
+
             // grawitacja
-            dy += 1;
+            dy += CHICKEN_GRAVITY;
             y += dy;
 
             onGround = false;
@@ -320,6 +403,10 @@ public class MainComponent extends JComponent {
                     g2.drawImage(frame, llamaX, llamaY, LLAMA_W, LLAMA_H, null);
                 }
             }
+        }
+        
+        for (Projectile p : projectiles) {
+            p.draw(g2);
         }
 
         if (rainbowImage != null) {
