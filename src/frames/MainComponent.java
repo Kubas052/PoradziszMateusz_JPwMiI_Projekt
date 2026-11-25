@@ -38,6 +38,9 @@ public class MainComponent extends JComponent {
 
     private final java.util.List<Platform> platforms = new java.util.ArrayList<>();
     private int platformSpawnCounter = 0;
+    
+    private final java.util.List<Chicken> chickens = new java.util.ArrayList<>();
+    private int chickenSpawnCounter = 0;
 
     private class Platform {
         int x, y, width, height;
@@ -157,6 +160,42 @@ public class MainComponent extends JComponent {
                 int spawnW = 100 + (int) (Math.random() * 100);
                 platforms.add(new Platform(spawnX, spawnY, spawnW, 20));
             }
+            
+            java.util.Iterator<Chicken> cit = chickens.iterator();
+            while (cit.hasNext()) {
+                Chicken c = cit.next();
+                c.update();
+                if (c.x + Chicken.FRAME_W < 0) {
+                    cit.remove();
+                }
+            }
+
+            // spawn kurczakow
+            chickenSpawnCounter++;
+            if (chickenSpawnCounter > 90) {
+                chickenSpawnCounter = 0;
+                int spawnX = getWidth();
+                int spawnY;
+
+                if (!platforms.isEmpty() && Math.random() < 0.5) {
+                    Platform p = platforms.get((int) (Math.random() * platforms.size()));
+                    spawnY = p.y - Chicken.FRAME_H;
+                } else {
+                    spawnY = getHeight() - 80 - Chicken.FRAME_H;
+                }
+
+                BufferedImage variant;
+                int r = (int) (Math.random() * 4);
+                switch (r) {
+                    case 0: variant = chickenBlack; break;
+                    case 1: variant = chickenDark; break;
+                    case 2: variant = chickenLight; break;
+                    default: variant = chickenSheet; break;
+                }
+                if (variant != null) {
+                    chickens.add(new Chicken(spawnX, spawnY, variant));
+                }
+            }
 
             repaint();
         });
@@ -172,6 +211,72 @@ public class MainComponent extends JComponent {
             chickenLight = ImageIO.read(getClass().getResourceAsStream("/resources/Chicken_Sprite_Sheet_Light_Brown.png"));
         } catch (Exception ex) {
             ex.printStackTrace();
+        } 
+    }
+        private class Chicken {
+        int x, y;
+        int dy = 0;
+        boolean onGround = false;
+        int frameIndex = 0;
+        int frameCounter = 0;
+        BufferedImage sheet;
+        static final int FRAME_W = 32;
+        static final int FRAME_H = 32;
+        static final int FRAME_COUNT = 16;
+
+        Chicken(int x, int y, BufferedImage sheet) {
+            this.x = x;
+            this.y = y;
+            this.sheet = sheet;
+        }
+
+        void update() {
+            x -= 3;
+
+            // grawitacja
+            dy += 1;
+            y += dy;
+
+            onGround = false;
+            for (Platform p : platforms) {
+                int bottom = y + FRAME_H;
+                if (bottom >= p.y && bottom <= p.y + p.height
+                        && x + FRAME_W > p.x && x < p.x + p.width
+                        && dy >= 0) {
+                    y = p.y - FRAME_H;
+                    dy = 0;
+                    onGround = true;
+                    break;
+                }
+            }
+
+            // kolizja
+            int groundY = getHeight() - 80 - FRAME_H;
+            if (y >= groundY) {
+                y = groundY;
+                dy = 0;
+                onGround = true;
+            }
+
+            // animacja
+            frameCounter++;
+            if (frameCounter >= 6) {
+                frameCounter = 0;
+                frameIndex = (frameIndex + 1) % FRAME_COUNT;
+            }
+        }
+
+        java.awt.Rectangle getBounds() {
+            return new java.awt.Rectangle(x, y, FRAME_W, FRAME_H);
+        }
+
+        void draw(Graphics2D g2) {
+            if (sheet == null) return;
+            int col = frameIndex % 4;
+            int row = frameIndex / 4;
+            BufferedImage frame = sheet.getSubimage(
+                    col * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H);
+            g2.drawImage(frame, x, y, FRAME_W, FRAME_H, null);
         }
     }
 
@@ -188,7 +293,7 @@ public class MainComponent extends JComponent {
             }
         }
         for (Platform p : platforms) {
-            g2.setColor(new java.awt.Color(34, 139, 34)); // zielony
+            g2.setColor(new java.awt.Color(34, 139, 34));
             g2.fillRect(p.x, p.y, p.width, p.height);
             g2.setColor(java.awt.Color.BLACK);
             g2.drawRect(p.x, p.y, p.width, p.height);
@@ -198,7 +303,10 @@ public class MainComponent extends JComponent {
         g2.setColor(new java.awt.Color(34, 139, 34));
         g2.fillRect(0, groundY, getWidth(), 80);
 
-        // lama
+        for (Chicken c : chickens) {
+            c.draw(g2);
+        }
+
         if (llamaImage != null) {
             int fy = frameIndex * LLAMA_H;
             if (fy + LLAMA_H <= llamaImage.getHeight()) {
@@ -222,21 +330,18 @@ public class MainComponent extends JComponent {
             BufferedImage frame = chickenSheet.getSubimage(0, 0, 32, 32);
             g2.drawImage(frame, 20, 100, 32, 32, null);
         }
-
         if (chickenBlack != null) {
             BufferedImage frame = chickenBlack.getSubimage(0, 0, 32, 32);
             g2.drawImage(frame, 100, 100, 32, 32, null);
         }
-
         if (chickenDark != null) {
             BufferedImage frame = chickenDark.getSubimage(0, 0, 32, 32);
             g2.drawImage(frame, 180, 100, 32, 32, null);
         }
-
         if (chickenLight != null) {
             BufferedImage frame = chickenLight.getSubimage(0, 0, 32, 32);
             g2.drawImage(frame, 260, 100, 32, 32, null);
-        }    
+        }
     }
     
 }
