@@ -15,9 +15,83 @@ public class MainComponent extends JComponent {
     private BufferedImage chickenBlack;
     private BufferedImage chickenDark;
     private BufferedImage chickenLight;
+    
+    private int llamaX = 100;
+    private int llamaY = 0;
+    private int llamaDy = 0;
+    private boolean onGround = true;
+    private static final int GRAVITY = 1;
+    private static final int JUMP_STRENGTH = -15;
+    private static final int LLAMA_SPEED = 6;
+    private static final int LLAMA_W = 48;
+    private static final int LLAMA_H = 48;
+    
+    private boolean leftPressed = false;
+    private boolean rightPressed = false;
+    private boolean facingLeft = false;
 
     public MainComponent() {
         setOpaque(true);
+        setFocusable(true);
+
+        addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                switch (e.getKeyCode()) {
+                    case java.awt.event.KeyEvent.VK_LEFT:
+                        leftPressed = true;
+                        facingLeft = true;
+                        break;
+                    case java.awt.event.KeyEvent.VK_RIGHT:
+                        rightPressed = true;
+                        facingLeft = false;
+                        break;
+                    case java.awt.event.KeyEvent.VK_SPACE:
+                    case java.awt.event.KeyEvent.VK_UP:
+                        if (onGround) {
+                            llamaDy = JUMP_STRENGTH;
+                            onGround = false;
+                        }
+                        break;
+                }
+            }
+
+            @Override
+            public void keyReleased(java.awt.event.KeyEvent e) {
+                switch (e.getKeyCode()) {
+                    case java.awt.event.KeyEvent.VK_LEFT:
+                        leftPressed = false;
+                        break;
+                    case java.awt.event.KeyEvent.VK_RIGHT:
+                        rightPressed = false;
+                        break;
+                }
+            }
+        });
+
+        // timer od grawitacji
+        javax.swing.Timer timer = new javax.swing.Timer(16, e -> {
+            if (leftPressed) {
+                llamaX -= LLAMA_SPEED;
+                if (llamaX < 0) llamaX = 0;
+            }
+            if (rightPressed) {
+                llamaX += LLAMA_SPEED;
+            }
+
+            llamaDy += GRAVITY;
+            llamaY += llamaDy;
+
+            int groundY = getHeight() - 80 - LLAMA_H;
+            if (llamaY >= groundY) {
+                llamaY = groundY;
+                llamaDy = 0;
+                onGround = true;
+            }
+
+            repaint();
+        });
+        timer.start();
 
         try {
             backgroundImage = ImageIO.read(getClass().getResourceAsStream("/resources/background.jpg"));
@@ -41,9 +115,21 @@ public class MainComponent extends JComponent {
             g2.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
         }
 
+        int groundY = getHeight() - 80;
+        g2.setColor(new java.awt.Color(34, 139, 34));
+        g2.fillRect(0, groundY, getWidth(), 80);
+
+        // lama
         if (llamaImage != null) {
-            BufferedImage frame = llamaImage.getSubimage(0, 0, 48, 48);
-            g2.drawImage(frame, 20, 20, 48, 48, null);
+            BufferedImage frame = llamaImage.getSubimage(0, 0, LLAMA_W, LLAMA_H);
+            if (facingLeft) {
+                g2.drawImage(frame,
+                        llamaX + LLAMA_W, llamaY,
+                        llamaX, llamaY + LLAMA_H,
+                        0, 0, LLAMA_W, LLAMA_H, null);
+            } else {
+                g2.drawImage(frame, llamaX, llamaY, LLAMA_W, LLAMA_H, null);
+            }
         }
 
         if (rainbowImage != null) {
@@ -68,7 +154,7 @@ public class MainComponent extends JComponent {
         if (chickenLight != null) {
             BufferedImage frame = chickenLight.getSubimage(0, 0, 32, 32);
             g2.drawImage(frame, 260, 100, 32, 32, null);
-        }
+        }    
     }
     
 }
