@@ -7,7 +7,9 @@ import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 
 public class MainComponent extends JComponent {
-
+    
+    // importy
+    
     private BufferedImage backgroundImage;
     private BufferedImage llamaImage;
     private BufferedImage rainbowImage;
@@ -15,6 +17,8 @@ public class MainComponent extends JComponent {
     private BufferedImage chickenBlack;
     private BufferedImage chickenDark;
     private BufferedImage chickenLight;
+    
+    // user
     
     private int llamaX = 100;
     private int llamaY = 0;
@@ -26,12 +30,14 @@ public class MainComponent extends JComponent {
     private static final int LLAMA_W = 48;
     private static final int LLAMA_H = 48;
     
+    // klawisze i animacje
+    
     private boolean leftPressed = false;
     private boolean rightPressed = false;
     private boolean facingLeft = false;
     private int frameIndex = 0;
     private int frameCounter = 0;
-    private static final int FRAME_COUNT = 6;
+    private static final int FRAME_COUNT = 6; // lama
     private static final int FRAME_DELAY = 4;
     
     private int scrollOffset = 0;
@@ -58,19 +64,21 @@ public class MainComponent extends JComponent {
         }
     }
     
-        private class Projectile {
+    private class Projectile {
         float x, y;
+        int direction = 1; // 1 - prawo -1 - lewo
         static final int W = 24;
         static final int H = 6;
         static final float SPEED = 4f;
 
-        Projectile(float x, float y) {
+        Projectile(float x, float y, int direction) {
             this.x = x;
             this.y = y;
+            this.direction = direction;
         }
 
         void update() {
-            x += SPEED;
+            x += SPEED * direction;
         }
 
         java.awt.Rectangle getBounds() {
@@ -91,7 +99,8 @@ public class MainComponent extends JComponent {
     public MainComponent() {
         setOpaque(true);
         setFocusable(true);
-
+        //4a interakcja z uzytkownikiem
+        //4b brak javafx'a
         addKeyListener(new java.awt.event.KeyAdapter() {
             @Override
             public void keyPressed(java.awt.event.KeyEvent e) {
@@ -132,7 +141,7 @@ public class MainComponent extends JComponent {
             }
         });
         
-        // timer od grawitacji
+        // 3a timer od grawitacji
             javax.swing.Timer timer = new javax.swing.Timer(16, e -> {
             if (leftPressed) {
                 llamaX -= LLAMA_SPEED;
@@ -140,8 +149,11 @@ public class MainComponent extends JComponent {
             }
             if (rightPressed) {
                 llamaX += LLAMA_SPEED;
+                if (llamaX + LLAMA_W > getWidth()) {
+                    llamaX = getWidth() - LLAMA_W;
+                }
             }
-
+            //3b animacja klatek
             if (leftPressed || rightPressed) {
                 frameCounter++;
                 if (frameCounter >= FRAME_DELAY) {
@@ -171,7 +183,7 @@ public class MainComponent extends JComponent {
                 }
             }
 
-            int groundY = getHeight() - 80 - LLAMA_H;
+            int groundY = getHeight() - 70 - LLAMA_H;
             if (llamaY >= groundY) {
                 llamaY = groundY;
                 llamaDy = 0;
@@ -241,8 +253,14 @@ public class MainComponent extends JComponent {
                 shootCooldown--;
                 if (shootCooldown <= 0) {
                     shootCooldown = SHOOT_DELAY;
+                    if (facingLeft) {
                     projectiles.add(new Projectile(
-                            llamaX + LLAMA_W, llamaY + LLAMA_H / 2f));
+                            llamaX, llamaY + LLAMA_H / 2f, -1));
+                    }
+                    else {
+                    projectiles.add(new Projectile(
+                            llamaX + LLAMA_W, llamaY + LLAMA_H / 2f, 1));
+                    }
                 }
             }
 
@@ -276,7 +294,9 @@ public class MainComponent extends JComponent {
             repaint();
         });
         timer.start();
-
+        
+        
+        // 1a grafika/dzwiek
         try {
             backgroundImage = ImageIO.read(getClass().getResourceAsStream("/resources/background.jpg"));
             llamaImage = ImageIO.read(getClass().getResourceAsStream("/resources/llama.png"));
@@ -355,7 +375,7 @@ public class MainComponent extends JComponent {
         java.awt.Rectangle getBounds() {
             return new java.awt.Rectangle(x, y, FRAME_W, FRAME_H);
         }
-
+        // 2a kurczaki
         void draw(Graphics2D g2) {
             if (sheet == null) return;
             int col = frameIndex % 4;
@@ -367,6 +387,8 @@ public class MainComponent extends JComponent {
     }
 
     @Override
+    
+    // 2a kopiowanie sprite sheetsow
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
@@ -387,6 +409,7 @@ public class MainComponent extends JComponent {
                 java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
         sg.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 10));
         sg.setColor(java.awt.Color.WHITE);
+        //2b score string
         sg.drawString(scoreText, 0, 9);
         sg.dispose();
 
@@ -395,10 +418,10 @@ public class MainComponent extends JComponent {
         int scaledH = small.getHeight() * 4;
         java.awt.Image scaled = small.getScaledInstance(scaledW, scaledH,
                 java.awt.Image.SCALE_REPLICATE);
-
+        // 2b drawimg 
         int textWidth = scaledW;
         g2.drawImage(scaled, getWidth() - textWidth - 20, 10, null);
-        
+        // 2b ksztalt
         for (Platform p : platforms) {
             g2.setColor(new java.awt.Color(34, 139, 34));
             g2.fillRect(p.x, p.y, p.width, p.height);
